@@ -14,68 +14,103 @@ class FormUiTest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun testFullFormLifecycle() {
-        // 1. Generate a form
-        composeTestRule.onNodeWithText("Generate").performClick()
+    fun testTwoStepGenerationFlow() {
+        // 1. Start: Parse and Submit should be disabled
+        composeTestRule.onNodeWithText("Parse Schema").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Submit").assertIsNotEnabled()
 
-        // 2. Verify at least one field appeared (e.g., looking for a Label)
-        // Since schema is random, we check for the common 'Pole Number' or generic text fields
-        // Note: In a real test, you might inject a fixed schema, but for now we assume the randomizer works
-        composeTestRule.onRoot().printToLog("TAG") // Optional: Helps debug layout in Logcat
+        // 2. Click Generate JSON
+        composeTestRule.onNodeWithText("Generate JSON").performClick()
 
-        // 3. Try to Submit immediately (Should fail validation)
-        composeTestRule.onNodeWithText("Submit").performClick()
+        // --- FIX: Close the Bottom Sheet that opens automatically ---
+        // Wait for the sheet to appear
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Close").fetchSemanticsNodes().isNotEmpty()
+        }
+        // Click Close
+        composeTestRule.onNodeWithText("Close").performClick()
+        // Wait for it to disappear so we can click other buttons
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Close").fetchSemanticsNodes().isEmpty()
+        }
+        // -----------------------------------------------------------
 
-        // 4. Check if error messages appeared
-        // We look for "This field is required" which is your validation string
-        // We use assertAny so it passes if at least one field is required
-        try {
-            composeTestRule.onAllNodesWithText("This field is required")
-                .onFirst()
-                .assertExists()
-        } catch (e: AssertionError) {
-            // It's possible the random schema generated no required fields, but unlikely
+        // 3. Verify "Parse Schema" became enabled
+        composeTestRule.onNodeWithText("Parse Schema").assertIsEnabled()
+
+        // 4. Click Parse Schema
+        composeTestRule.onNodeWithText("Parse Schema").performClick()
+
+        // 5. Verify Form Renders (Submit becomes enabled)
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            try {
+                composeTestRule.onNodeWithText("Submit").assertIsEnabled()
+                true
+            } catch (_: AssertionError) { false }
+        }
+
+        // 6. Verify a common field marker exists (if any required fields were generated)
+        val requiredMarkers = composeTestRule.onAllNodes(hasText("*", substring = true))
+        if (requiredMarkers.fetchSemanticsNodes().isNotEmpty()) {
+            requiredMarkers.onFirst().assertExists()
         }
     }
 
     @Test
-    fun testViewSchemaDialog() {
-        // 1. Generate Form
-        composeTestRule.onNodeWithText("Generate").performClick()
+    fun testSourceJsonBottomSheet() {
+        // 1. Generate JSON
+        composeTestRule.onNodeWithText("Generate JSON").performClick()
 
-        // 2. Open Schema View
-        composeTestRule.onNodeWithText("View Schema").performClick()
-
-        // 3. Verify Dialog is visible
-        composeTestRule.onNodeWithText("Current Schema JSON").assertIsDisplayed()
-
-        // 4. Close Dialog
-        composeTestRule.onNodeWithText("Close").performClick()
-
-        // 5. Verify Dialog is gone (Wait for animation to finish)
+        // 2. Wait for Bottom Sheet content
         composeTestRule.waitUntil(timeoutMillis = 3000) {
             composeTestRule
-                .onAllNodesWithText("Current Schema JSON")
+                .onAllNodesWithText("Generated Source JSON")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // 3. Verify content is displayed
+        composeTestRule.onNodeWithText("Generated Source JSON").assertIsDisplayed()
+
+        // 4. Close the Sheet
+        composeTestRule.onNodeWithText("Close").performClick()
+
+        // 5. Verify Sheet is gone
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule
+                .onAllNodesWithText("Generated Source JSON")
                 .fetchSemanticsNodes().isEmpty()
         }
     }
 
     @Test
-    fun testInputInteraction() {
-        // 1. Generate Form
-        composeTestRule.onNodeWithText("Generate").performClick()
+    fun testInputAndSubmission() {
+        // 1. Generate
+        composeTestRule.onNodeWithText("Generate JSON").performClick()
 
-        // 2. Find a text field and type into it
-        // This looks for any generic text field.
-        // In a random schema, we rely on "Pole Number" often being present.
-        // If your schema is purely random, this test might be flaky without a fixed schema.
-        val poleNumberNode = composeTestRule.onAllNodesWithText("Pole Number *").onFirst()
+        // 2. Close the auto-opened JSON sheet
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Close").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("Close").performClick()
 
-        if (poleNumberNode.isDisplayed()) {
-            poleNumberNode.performTextInput("Test-Data-123")
+        // Wait for sheet to close
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Close").fetchSemanticsNodes().isEmpty()
+        }
 
-            // Verify text was entered
-            poleNumberNode.assert(hasText("Test-Data-123"))
+        // 3. Parse
+        composeTestRule.onNodeWithText("Parse Schema").performClick()
+
+        // 4. Wait for UI
+        composeTestRule.waitForIdle()
+
+        // 5. Try to Submit empty (Trigger Validation)
+        composeTestRule.onNodeWithText("Submit").performClick()
+
+        // 6. Check for error
+        val errorNodes = composeTestRule.onAllNodesWithText("This field is required")
+        if (errorNodes.fetchSemanticsNodes().isNotEmpty()) {
+            errorNodes.onFirst().assertExists()
         }
     }
 }

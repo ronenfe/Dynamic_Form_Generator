@@ -5,36 +5,71 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.gson.GsonBuilder
 
-class FormViewModel(
-    private val schemaProvider: () -> List<FormFieldSchema> = { SchemaGenerator.generateRandomSchema() }
-) : ViewModel() {
+class FormViewModel : ViewModel() {
 
+    // State: The Schema Objects (for the UI)
     var schema = mutableStateOf<List<FormFieldSchema>>(emptyList())
         private set
 
+    // State: The Form Data
     val formData = mutableStateMapOf<String, Any?>()
     var validationErrors = mutableStateOf<Map<String, String>>(emptyMap())
         private set
     var submissionResult = mutableStateOf<String?>(null)
+
+    // State: Dialog visibility & Content
     var showSchemaDialog = mutableStateOf(false)
+    var rawSchemaJson = mutableStateOf("")
+        private set
 
-    fun generateNewForm() {
-        // CHANGE 2: Use the provider instead of hardcoding SchemaGenerator
-        val newSchema = schemaProvider()
-        schema.value = newSchema
+    // Internal storage for the strings before they are parsed
+    private var tempJsonSchema: String = ""
+    private var tempUiSchema: String = ""
 
+    // STEP 1: Generate the JSON strings and show the dialog (Do NOT render yet)
+    fun loadRandomJson() {
+        val (jsonSchema, uiSchema) = SchemaGenerator.generateRandomJsonStrings()
+
+        // Store them internally
+        tempJsonSchema = jsonSchema
+        tempUiSchema = uiSchema
+
+        // Update the display string for the dialog
+        rawSchemaJson.value = "Data Schema:\n$jsonSchema\n\nUI Schema:\n$uiSchema"
+
+        // Show the dialog immediately
+        showSchemaDialog.value = true
+
+        // Optional: Clear current form so user knows they need to click "Parse"
+        schema.value = emptyList()
+        formData.clear()
+    }
+
+    // STEP 2: Parse the stored strings and render the UI
+    fun parseJson() {
+        if (tempJsonSchema.isEmpty()) return
+
+        try {
+            val parsedList = SchemaParser.parseSchemas(tempJsonSchema, tempUiSchema)
+            schema.value = parsedList
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Reset Data & Validation
         formData.clear()
         validationErrors.value = emptyMap()
         submissionResult.value = null
 
-        newSchema.forEach { field ->
+        // Initialize defaults
+        schema.value.forEach { field ->
             if (field.type == FieldType.BOOLEAN) {
                 formData[field.key] = false
             }
         }
     }
 
-    // ... (rest of the file remains exactly the same: onDataChanged, submitForm, validateForm) ...
+    // ... (onDataChanged, submitForm, validateForm remain exactly the same) ...
     fun onDataChanged(key: String, value: Any?) {
         formData[key] = value
         if (validationErrors.value.containsKey(key)) {

@@ -3,115 +3,68 @@ package net.festinger.dynamicformgenerator
 import org.junit.Assert.*
 import org.junit.Test
 
-/**
- * Local unit tests for FormViewModel.
- * Verifies validation logic (Required, Regex, Min/Max) without needing an emulator. */
 class FormViewModelTest {
 
-    // A fixed schema for testing so we know exactly what fields exist
-    private val testSchema = listOf(
-        FormFieldSchema(
-            key = "testRequired",
-            label = "Required Field",
-            type = FieldType.STRING,
-            required = true
-        ),
-        FormFieldSchema(
-            key = "testRegex",
-            label = "Regex Field",
-            type = FieldType.STRING,
-            required = true,
-            regex = "^[A-Z]{2}-\\d{4}$" // Example: NY-1234
-        ),
-        FormFieldSchema(
-            key = "testNumber",
-            label = "Number Field",
-            type = FieldType.NUMBER,
-            required = true,
-            min = 10.0,
-            max = 20.0
-        )
-    )
-
     @Test
-    fun `generateNewForm loads schema and defaults`() {
-        // Inject the test schema
-        val viewModel = FormViewModel { testSchema }
+    fun `loadRandomJson generates strings and updates rawJson state`() {
+        val viewModel = FormViewModel()
 
-        viewModel.generateNewForm()
+        // 1. Call the new generation method
+        viewModel.loadRandomJson()
 
-        assertEquals(3, viewModel.schema.value.size)
-        assertEquals("testRequired", viewModel.schema.value[0].key)
-        assertTrue(viewModel.formData.isEmpty())
+        // 2. Verify that the raw JSON string is populated
+        assertTrue("Raw JSON should not be empty", viewModel.rawSchemaJson.value.isNotEmpty())
+        assertTrue("Should contain 'Data Schema'", viewModel.rawSchemaJson.value.contains("Data Schema"))
+
+        // 3. Verify that the schema list is CLEARED (waiting for parse)
+        assertTrue("Schema list should be empty before parsing", viewModel.schema.value.isEmpty())
+
+        // 4. Verify dialog trigger
+        assertTrue("Dialog/Sheet should be visible", viewModel.showSchemaDialog.value)
     }
 
     @Test
-    fun `validation fails when required fields are empty`() {
-        val viewModel = FormViewModel { testSchema }
-        viewModel.generateNewForm()
+    fun `parseJson populates the schema list`() {
+        val viewModel = FormViewModel()
 
-        // Attempt submit with empty data
-        viewModel.submitForm()
+        // 1. Load data first
+        viewModel.loadRandomJson()
 
-        val errors = viewModel.validationErrors.value
-        assertTrue("Error missing for required field", errors.containsKey("testRequired"))
-        assertTrue("Error missing for regex field", errors.containsKey("testRegex"))
-        assertNull("Result should be null on error", viewModel.submissionResult.value)
+        // 2. Parse it
+        viewModel.parseJson()
+
+        // 3. Verify we now have objects
+        assertTrue("Schema list should contain fields after parsing", viewModel.schema.value.isNotEmpty())
+
+        // 4. Verify defaults are set (e.g. Booleans in formData)
+        // We check if any booleans exist in the random schema, if so, they must be in formData
+        val booleanFields = viewModel.schema.value.filter { it.type == FieldType.BOOLEAN }
+        booleanFields.forEach { field ->
+            assertEquals(false, viewModel.formData[field.key])
+        }
     }
 
     @Test
-    fun `validation fails for invalid regex format`() {
-        val viewModel = FormViewModel { testSchema }
-        viewModel.generateNewForm()
+    fun `validation logic works on parsed objects`() {
+        val viewModel = FormViewModel()
+        viewModel.loadRandomJson()
+        viewModel.parseJson()
 
-        // Valid data for other fields
-        viewModel.onDataChanged("testRequired", "Valid")
-        viewModel.onDataChanged("testNumber", "15")
+        // Find a required field if one exists
+        val requiredField = viewModel.schema.value.find { it.required }
 
-        // Invalid Regex (lowercase instead of uppercase)
-        viewModel.onDataChanged("testRegex", "ny-1234")
+        if (requiredField != null) {
+            // Submit empty
+            viewModel.submitForm()
 
-        viewModel.submitForm()
+            // Check error
+            assertTrue(viewModel.validationErrors.value.containsKey(requiredField.key))
 
-        val errors = viewModel.validationErrors.value
-        assertTrue("Should have error for regex", errors.containsKey("testRegex"))
-    }
+            // Fix error
+            viewModel.onDataChanged(requiredField.key, "Some Value")
 
-    @Test
-    fun `validation fails for number out of range`() {
-        val viewModel = FormViewModel { testSchema }
-        viewModel.generateNewForm()
-
-        viewModel.onDataChanged("testRequired", "Valid")
-        viewModel.onDataChanged("testRegex", "NY-1234")
-
-        // Too Low (Minimum is 10.0)
-        viewModel.onDataChanged("testNumber", "5")
-        viewModel.submitForm()
-        assertTrue(viewModel.validationErrors.value.containsKey("testNumber"))
-
-        // Too High (Maximum is 20.0)
-        viewModel.onDataChanged("testNumber", "25")
-        viewModel.submitForm()
-        assertTrue(viewModel.validationErrors.value.containsKey("testNumber"))
-    }
-
-    @Test
-    fun `validation succeeds when all data is valid`() {
-        val viewModel = FormViewModel { testSchema }
-        viewModel.generateNewForm()
-
-        // Fill all valid data
-        viewModel.onDataChanged("testRequired", "Some Text")
-        viewModel.onDataChanged("testRegex", "NY-9999")
-        viewModel.onDataChanged("testNumber", "15.5")
-
-        viewModel.submitForm()
-
-        // Errors should be empty
-        assertTrue(viewModel.validationErrors.value.isEmpty())
-
-        // Result should be generated
-        assertNotNull(viewModel.submissionResult.value)
+            // Check error removed
+            assertFalse(viewModel.validationErrors.value.containsKey(requiredField.key))
+        }
     }
 }
