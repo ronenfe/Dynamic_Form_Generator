@@ -2,6 +2,12 @@
 
 **Dynamic Form Generator** is a modern Android application built with **Kotlin** and **Jetpack Compose**. It demonstrates the ability to dynamically render user interfaces based on backend-driven JSON schemas.
 
+## 📸 Screenshots
+
+| Start Screen | JSON Preview | Rendered Form |
+|:---:|:---:|:---:|
+| ![Home Screen](screenshots/home_screen.png) | ![JSON Preview](screenshots/json_preview.png) | ![Dynamic Form](screenshots/form_screen.png) |
+
 ## 📱 Features
 
 *   **Dynamic Rendering**: Automatically builds UI components (Text Fields, Date Pickers, Dropdowns, etc.) from JSON definitions.
