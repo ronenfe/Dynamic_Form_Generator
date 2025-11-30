@@ -1,4 +1,4 @@
-package net.festinger.dynamicformgenerator
+package net.festinger.dynamicformgenerator.data
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -45,6 +45,11 @@ object SchemaParser {
 
             val fieldUiOptions = uiSchema[key] ?: emptyMap()
 
+            // Extract specific UI properties
+            val uiWidget = fieldUiOptions["ui:widget"] as? String
+            val uiPlaceholder = fieldUiOptions["ui:placeholder"] as? String
+            val uiAutofocus = fieldUiOptions["ui:autofocus"] as? Boolean ?: false
+
             mergedList.add(
                 FormFieldSchema(
                     key = key,
@@ -55,7 +60,9 @@ object SchemaParser {
                     min = definition.min,
                     max = definition.max,
                     regex = definition.regex,
-                    uiOptions = fieldUiOptions
+                    uiWidget = uiWidget,
+                    uiPlaceholder = uiPlaceholder,
+                    uiAutofocus = uiAutofocus
                 )
             )
         }

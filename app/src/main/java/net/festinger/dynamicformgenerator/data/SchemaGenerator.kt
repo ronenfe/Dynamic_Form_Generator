@@ -1,4 +1,4 @@
-package net.festinger.dynamicformgenerator
+package net.festinger.dynamicformgenerator.data
 
 import com.google.gson.GsonBuilder
 import java.util.Locale

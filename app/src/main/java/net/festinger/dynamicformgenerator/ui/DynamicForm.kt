@@ -1,4 +1,4 @@
-package net.festinger.dynamicformgenerator
+package net.festinger.dynamicformgenerator.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import net.festinger.dynamicformgenerator.data.FieldType
+import net.festinger.dynamicformgenerator.data.FormFieldSchema
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

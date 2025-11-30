@@ -1,5 +1,7 @@
 package net.festinger.dynamicformgenerator
 
+import net.festinger.dynamicformgenerator.data.FieldType
+import net.festinger.dynamicformgenerator.viewmodel.FormViewModel
 import org.junit.Assert.*
 import org.junit.Test
 

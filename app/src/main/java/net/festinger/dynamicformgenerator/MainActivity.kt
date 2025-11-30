@@ -30,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import net.festinger.dynamicformgenerator.ui.DynamicForm
+import net.festinger.dynamicformgenerator.viewmodel.FormViewModel
 import net.festinger.dynamicformgenerator.ui.theme.DynamicFormGeneratorTheme
 
 class MainActivity : ComponentActivity() {

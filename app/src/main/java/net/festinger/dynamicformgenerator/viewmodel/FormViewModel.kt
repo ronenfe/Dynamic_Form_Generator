@@ -1,9 +1,13 @@
-package net.festinger.dynamicformgenerator
+package net.festinger.dynamicformgenerator.viewmodel
 
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.gson.GsonBuilder
+import net.festinger.dynamicformgenerator.data.FieldType
+import net.festinger.dynamicformgenerator.data.FormFieldSchema
+import net.festinger.dynamicformgenerator.data.SchemaGenerator
+import net.festinger.dynamicformgenerator.data.SchemaParser
 
 class FormViewModel : ViewModel() {
 
@@ -68,8 +72,6 @@ class FormViewModel : ViewModel() {
             }
         }
     }
-
-    // ... (onDataChanged, submitForm, validateForm remain exactly the same) ...
     fun onDataChanged(key: String, value: Any?) {
         formData[key] = value
         if (validationErrors.value.containsKey(key)) {

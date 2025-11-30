@@ -1,5 +1,7 @@
 package net.festinger.dynamicformgenerator
 
+import net.festinger.dynamicformgenerator.data.FieldType
+import net.festinger.dynamicformgenerator.data.SchemaParser
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -39,8 +41,8 @@ class SchemaParserTest {
         assertEquals(true, field.required)
 
         // Check UI Options merge
-        assertEquals("textarea", field.uiOptions["ui:widget"])
-        assertEquals("Enter text here", field.uiOptions["ui:placeholder"])
+        assertEquals("textarea", field.uiWidget)
+        assertEquals("Enter text here", field.uiPlaceholder)
     }
 
     @Test
@@ -51,7 +53,8 @@ class SchemaParserTest {
         val result = SchemaParser.parseSchemas(jsonSchema, uiSchema)
 
         assertEquals(1, result.size)
-        assertTrue(result[0].uiOptions.isEmpty())
+        assertNull(result[0].uiWidget)
+        assertNull(result[0].uiPlaceholder)
     }
 
     @Test
