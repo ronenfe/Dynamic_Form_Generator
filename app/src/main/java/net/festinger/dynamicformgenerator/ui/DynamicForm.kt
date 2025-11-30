@@ -1,5 +1,13 @@
 package net.festinger.dynamicformgenerator.ui
 
+import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,14 +18,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import net.festinger.dynamicformgenerator.data.FieldType
 import net.festinger.dynamicformgenerator.data.FormFieldSchema
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,6 +40,8 @@ fun DynamicForm(
     validationErrors: Map<String, String>,
     onDataChanged: (String, Any?) -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -272,6 +284,48 @@ fun DynamicForm(
                     }
                     FieldType.IMAGE -> {
                         val hasImage = currentValue != null
+                        var tempImageUri by remember { mutableStateOf<Uri?>(null) }
+
+                        val cameraLauncher = rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.TakePicture()
+                        ) { success ->
+                            if (success && tempImageUri != null) {
+                                // CONVERT URI TO BASE64 STRING
+                                try {
+                                    val inputStream = context.contentResolver.openInputStream(tempImageUri!!)
+                                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                                    val outputStream = ByteArrayOutputStream()
+                                    // Compress to JPEG, 50% quality to save space
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+                                    val byteArray = outputStream.toByteArray()
+                                    val base64String = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                                    
+                                    // Save Base64 string to form data
+                                    onDataChanged(field.key, base64String)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    Toast.makeText(context, "Failed to process image", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+
+                        val permissionLauncher = rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.RequestPermission()
+                        ) { isGranted ->
+                            if (isGranted) {
+                                val file = File.createTempFile("img_", ".jpg", context.cacheDir)
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file
+                                )
+                                tempImageUri = uri
+                                cameraLauncher.launch(uri)
+                            } else {
+                                Toast.makeText(context, "Camera permission is required", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
                         Column {
                             Row(
                                 modifier = Modifier
@@ -291,7 +345,7 @@ fun DynamicForm(
                                     color = if (hasImage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
                                 Button(onClick = {
-                                    onDataChanged(field.key, "file:///storage/emulated/0/DCIM/img_123.jpg")
+                                    permissionLauncher.launch(Manifest.permission.CAMERA)
                                 }) {
                                     Text(if (hasImage) "Retake" else "Camera")
                                 }

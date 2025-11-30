@@ -49,7 +49,26 @@ The codebase is organized into functional packages for better maintainability:
 
 ## ✅ Testing
 
-Run the unit and UI tests to verify functionality:
+The project includes a comprehensive test suite:
+
+### 1. Unit Tests (`testDebugUnitTest`)
+Located in `app/src/test/java/...`, these tests verify the business logic without needing a device.
+*   **`SchemaParserTest`**:
+    *   Verifies that JSON strings are correctly parsed into `FormFieldSchema` objects.
+    *   Checks that "Data Schema" and "UI Schema" properties (like `ui:widget`) are correctly merged.
+    *   Ensures missing or malformed JSON is handled gracefully.
+*   **`FormViewModelTest`**:
+    *   Tests the state management flow: Generating JSON -> Parsing -> Validating.
+    *   Ensures `validationErrors` are correctly set when required fields are empty or regex fails.
+
+### 2. UI Tests (`connectedAndroidTest`)
+Located in `app/src/androidTest/java/...`, these tests run on an emulator/device to verify the user interface.
+*   **`FormUiTest`**:
+    *   **`testTwoStepGenerationFlow`**: Simulates the user clicking "Generate", closing the preview, and then "Parse". It asserts that buttons enable/disable correctly.
+    *   **`testSourceJsonBottomSheet`**: Verifies that the JSON preview sheet appears and displays content.
+    *   **`testInputAndSubmission`**: Simulates a form submission with empty fields to verify that error messages ("This field is required") appear on the screen.
+
+Run the tests with:
 ```bash
 ./gradlew testDebugUnitTest
 ./gradlew connectedAndroidTest
