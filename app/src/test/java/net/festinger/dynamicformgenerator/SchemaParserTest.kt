@@ -8,6 +8,40 @@ import org.junit.Test
 class SchemaParserTest {
 
     @Test
+    fun `parseSchemas correctly reads radio widget and custom labels`() {
+        val json = """
+        {"priority": { "type": "dropdown", "label": "Priority", "options": ["Low", "High"] },
+          "location": { "type": "gps", "label": "Site Location" }
+        }
+    """.trimIndent()
+        val uiJson = """
+        {
+          "priority": { "ui:widget": "radio" },
+          "location": { "ui:icon": "location_on", "ui:buttonLabel": "Get GPS" }
+        }
+    """.trimIndent()
+
+        val result = SchemaParser.parseSchemas(json, uiJson)
+        val priorityField = result.find { it.key == "priority" }!!
+        val locationField = result.find { it.key == "location" }!!
+
+        // Assert new properties were parsed
+        assertEquals("radio", priorityField.uiWidget)
+        assertEquals("location_on", locationField.uiIcon)
+        assertEquals("Get GPS", locationField.uiButtonLabel)
+    }
+
+    @Test
+    fun `parseSchemas correctly reads helper text`() {
+        val json = """{ "notes": { "type": "string", "label": "Notes" } }"""
+        val uiJson = """{ "notes": { "ui:help": "This is a helper text." } }"""
+
+        val result = SchemaParser.parseSchemas(json, uiJson)
+        val field = result.first()
+
+        assertEquals("This is a helper text.", field.uiHelp)
+    }
+    @Test
     fun `parseSchemas correctly merges Data and UI schemas`() {
         // 1. Define Mock JSON Strings
         val jsonSchema = """

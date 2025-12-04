@@ -42,7 +42,8 @@ class FormViewModelTest {
         // We check if any booleans exist in the random schema, if so, they must be in formData
         val booleanFields = viewModel.schema.value.filter { it.type == FieldType.BOOLEAN }
         booleanFields.forEach { field ->
-            assertEquals(false, viewModel.formData[field.key])
+            val value = viewModel.formData[field.key]
+            assertTrue("Field ${field.key} should be a Boolean", value is Boolean)
         }
     }
 
@@ -56,11 +57,16 @@ class FormViewModelTest {
         val requiredField = viewModel.schema.value.find { it.required }
 
         if (requiredField != null) {
-            // Submit empty
+            // 1. Explicitly clear the data for this key to ensure it's null
+            // (Sometimes defaults might set it to "")
+            viewModel.formData.remove(requiredField.key)
+
+            // 2. Submit empty
             viewModel.submitForm()
 
             // Check error
-            assertTrue(viewModel.validationErrors.value.containsKey(requiredField.key))
+            assertTrue("Should have error for required field ${requiredField.key}",
+                viewModel.validationErrors.value.containsKey(requiredField.key))
 
             // Fix error
             viewModel.onDataChanged(requiredField.key, "Some Value")

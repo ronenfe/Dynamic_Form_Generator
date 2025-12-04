@@ -98,12 +98,26 @@ fun DynamicForm(
                         FieldType.STRING, FieldType.NUMBER -> {
                             // Special case for Slider
                             if (field.type == FieldType.NUMBER && field.uiWidget == "slider") {
-                                Text(text = "$labelText: ${(currentValue as? Number)?.toString() ?: ""}")
+                                val sliderValue = (currentValue as? Number)?.toDouble() ?: field.min ?: 0.0
+                                val displayText = if (field.uiStep == 1.0) {
+                                    sliderValue.toInt().toString()
+                                } else {
+                                    String.format(
+                                        Locale.getDefault(),
+                                        "%.1f",
+                                        sliderValue
+                                    ) // Sensible default for other sliders
+                                }
+                                Text(text = "$labelText: $displayText")
                                 Slider(
-                                    value = (currentValue.toString().toFloatOrNull() ?: field.min?.toFloat() ?: 0f),
+                                    value = sliderValue.toFloat(),
                                     onValueChange = { onDataChanged(field.key, it.toDouble()) },
                                     valueRange = (field.min?.toFloat() ?: 0f)..(field.max?.toFloat() ?: 10f),
-                                    steps = if (field.uiStep != null) ((field.max!! - field.min!!) / field.uiStep).toInt() - 1 else 0
+                                    steps = if (field.uiStep != null && field.min != null && field.max != null && field.uiStep > 0) {
+                                        ((field.max - field.min) / field.uiStep).toInt() - 1
+                                    } else {
+                                        0
+                                    }
                                 )
                             } else {
                                 OutlinedTextField(
@@ -187,7 +201,10 @@ fun DynamicForm(
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                         modifier = Modifier
-                                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                                            .menuAnchor(
+                                                ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                            )
                                             .fillMaxWidth()
                                     )
                                     ExposedDropdownMenu(
@@ -244,7 +261,9 @@ fun DynamicForm(
                                     supportingText = if (isError) { { Text(errorMessage) } } else null,
                                     modifier = Modifier.fillMaxWidth()
                                 )
-                                Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
+                                Box(modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showDatePicker = true })
                             }
                         }
                         FieldType.TIME -> {
@@ -281,7 +300,9 @@ fun DynamicForm(
                                     trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                                     modifier = Modifier.fillMaxWidth()
                                 )
-                                Box(modifier = Modifier.matchParentSize().clickable { showTimePicker = true })
+                                Box(modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showTimePicker = true })
                             }
                         }
                         FieldType.MULTI_SELECT -> {
@@ -304,7 +325,8 @@ fun DynamicForm(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .clickable {
-                                                            val newList = if (isSelected) currentSelection - option else currentSelection + option
+                                                            val newList =
+                                                                if (isSelected) currentSelection - option else currentSelection + option
                                                             onDataChanged(field.key, newList)
                                                         }
                                                         .padding(vertical = 8.dp)
@@ -328,7 +350,9 @@ fun DynamicForm(
                                     supportingText = if (isError) { { Text(errorMessage) } } else null,
                                     modifier = Modifier.fillMaxWidth()
                                 )
-                                Box(modifier = Modifier.matchParentSize().clickable { showDialog = true })
+                                Box(modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showDialog = true })
                             }
                         }
                         FieldType.GPS_LOCATION -> {
