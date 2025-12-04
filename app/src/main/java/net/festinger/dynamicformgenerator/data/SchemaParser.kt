@@ -12,7 +12,10 @@ object SchemaParser {
         val options: List<String>? = null,
         val min: Double? = null,
         val max: Double? = null,
-        val regex: String? = null
+        val regex: String? = null,
+        val minLength: Int? = null,
+        val maxLength: Int? = null,
+        val default: Any? = null
     )
 
     fun parseSchemas(jsonSchemaString: String, uiSchemaString: String): List<FormFieldSchema> {
@@ -49,6 +52,16 @@ object SchemaParser {
             val uiWidget = fieldUiOptions["ui:widget"] as? String
             val uiPlaceholder = fieldUiOptions["ui:placeholder"] as? String
             val uiAutofocus = fieldUiOptions["ui:autofocus"] as? Boolean ?: false
+            val uiHelp = fieldUiOptions["ui:help"] as? String
+            val uiIcon = fieldUiOptions["ui:icon"] as? String
+            val uiButtonLabel = fieldUiOptions["ui:buttonLabel"] as? String
+            val uiInputType = fieldUiOptions["ui:inputType"] as? String
+            val uiFormat = fieldUiOptions["ui:format"] as? String
+            
+            // Handle numeric properties (JSON numbers come as Doubles)
+            val uiLines = (fieldUiOptions["ui:lines"] as? Double)?.toInt()
+            val uiMaxLines = (fieldUiOptions["ui:maxLines"] as? Double)?.toInt()
+            val uiStep = fieldUiOptions["ui:step"] as? Double
 
             mergedList.add(
                 FormFieldSchema(
@@ -60,9 +73,20 @@ object SchemaParser {
                     min = definition.min,
                     max = definition.max,
                     regex = definition.regex,
+                    minLength = definition.minLength,
+                    maxLength = definition.maxLength,
+                    default = definition.default,
                     uiWidget = uiWidget,
                     uiPlaceholder = uiPlaceholder,
-                    uiAutofocus = uiAutofocus
+                    uiAutofocus = uiAutofocus,
+                    uiHelp = uiHelp,
+                    uiIcon = uiIcon,
+                    uiLines = uiLines,
+                    uiMaxLines = uiMaxLines,
+                    uiButtonLabel = uiButtonLabel,
+                    uiStep = uiStep,
+                    uiFormat = uiFormat,
+                    uiInputType = uiInputType
                 )
             )
         }

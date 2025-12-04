@@ -67,11 +67,14 @@ class FormViewModel : ViewModel() {
 
         // Initialize defaults
         schema.value.forEach { field ->
-            if (field.type == FieldType.BOOLEAN) {
+            if (field.default != null) {
+                formData[field.key] = field.default
+            } else if (field.type == FieldType.BOOLEAN) {
                 formData[field.key] = false
             }
         }
     }
+
     fun onDataChanged(key: String, value: Any?) {
         formData[key] = value
         if (validationErrors.value.containsKey(key)) {
@@ -104,11 +107,24 @@ class FormViewModel : ViewModel() {
             }
 
             if (value != null && value.toString().isNotBlank()) {
+                // REGEX Validation
                 if (field.regex != null && value is String) {
                     if (!value.matches(Regex(field.regex))) {
                         errors[field.key] = "Invalid format. Expected pattern: ${field.regex}"
                     }
                 }
+                
+                // String Length Validation
+                if (value is String) {
+                    if (field.minLength != null && value.length < field.minLength) {
+                        errors[field.key] = "Minimum length is ${field.minLength} characters"
+                    }
+                    if (field.maxLength != null && value.length > field.maxLength) {
+                        errors[field.key] = "Maximum length is ${field.maxLength} characters"
+                    }
+                }
+
+                // Numeric Range Validation
                 if (field.type == FieldType.NUMBER) {
                     val numValue = value.toString().toDoubleOrNull()
                     if (numValue == null) {
